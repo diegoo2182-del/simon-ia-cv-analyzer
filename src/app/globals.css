@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --surface: #f8f7ff;
+  --surface-2: #ede9fe;
+  --border: #e8e4f0;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --navy: #0d0d2b;
+  --navy-text: #1a1a3e;
+}
+
+body {
+  background-color: var(--background);
+  color: #374151;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f3f0ff; }
+::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
+
+/* Animación de entrada para resultados */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out forwards; }
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+
+/* Score glow */
+.score-glow-green { box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
+.score-glow-amber { box-shadow: 0 0 30px rgba(245, 158, 11, 0.2); }
+.score-glow-red   { box-shadow: 0 0 30px rgba(239, 68, 68, 0.2); }
+
+/* Blob decoration */
+.hero-blob {
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 60% 40%, #7c3aed55 0%, #a855f733 40%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
