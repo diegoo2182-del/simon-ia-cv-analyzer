@@ -17,10 +17,10 @@ export async function extractTextFromFile(file: File): Promise<string> {
 }
 
 async function extractFromPdf(buffer: Buffer): Promise<string> {
-  const pdfParse = (await import('pdf-parse')).default;
-  const result = await pdfParse(buffer);
+  const { extractText } = await import('unpdf');
+  const result = await extractText(new Uint8Array(buffer), { mergePages: true });
 
-  const text = result.text?.trim() ?? '';
+  const text = (Array.isArray(result.text) ? result.text.join('\n') : result.text ?? '').trim();
   if (text.length < MIN_TEXT_LENGTH) {
     throw new Error('No se pudo extraer texto del PDF. Verificá que no sea un PDF escaneado sin OCR.');
   }
