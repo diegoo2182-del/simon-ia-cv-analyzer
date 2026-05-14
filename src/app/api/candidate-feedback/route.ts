@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCandidateFeedback } from '@/services/candidateFeedback';
 import { AnalysisResult, JobRequirements, CandidateFeedbackResponse } from '@/types/analysis';
+import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest): Promise<NextResponse<CandidateFeedbackResponse>> {
+  const ip = getClientIP(req);
+  const rl = checkRateLimit(ip, 'default');
+  if (!rl.allowed) {
+    const resetIn = Math.ceil((rl.resetAt - Date.now()) / 60000);
+    return NextResponse.json(
+      { success: false, error: `Límite de solicitudes alcanzado. Intentá de nuevo en ${resetIn} minutos.` },
+      { status: 429 }
+    );
+  }
+
   try {
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ success: false, error: 'GROQ_API_KEY no configurada.' }, { status: 500 });
