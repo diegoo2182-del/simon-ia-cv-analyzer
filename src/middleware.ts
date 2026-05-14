@@ -9,7 +9,7 @@ const ALLOWED_ORIGINS = [
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login'];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Rutas públicas — no requieren auth
@@ -38,7 +38,7 @@ export function middleware(req: NextRequest) {
 
     // Auth check para APIs
     const token = req.cookies.get(SESSION_COOKIE)?.value;
-    if (!token || !verifySessionToken(token)) {
+    if (!token || !(await verifySessionToken(token))) {
       return NextResponse.json({ success: false, error: 'No autenticado.' }, { status: 401 });
     }
 
@@ -47,7 +47,7 @@ export function middleware(req: NextRequest) {
 
   // Auth check para páginas
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  if (!token || !verifySessionToken(token)) {
+  if (!token || !(await verifySessionToken(token))) {
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);

@@ -1,26 +1,40 @@
-import { createHmac } from 'crypto';
+export const SESSION_COOKIE = 'simon_session';
+export const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
 
-const SESSION_COOKIE = 'simon_session';
-const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 horas
-
-function sign(payload: string): string {
+async function getKey(): Promise<CryptoKey> {
   const secret = process.env.AUTH_SECRET ?? 'fallback-secret';
-  return createHmac('sha256', secret).update(payload).digest('hex');
+  const enc = new TextEncoder();
+  return crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign', 'verify']
+  );
 }
 
-export function createSessionToken(): string {
+async function sign(payload: string): Promise<string> {
+  const key = await getKey();
+  const enc = new TextEncoder();
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+
+export async function createSessionToken(): Promise<string> {
   const expires = Date.now() + SESSION_TTL_MS;
   const payload = String(expires);
-  const sig = sign(payload);
-  return `${payload}.${sig}`;
+  const sig = await sign(payload);
+  return `${payload}.${encodeURIComponent(sig)}`;
 }
 
-export function verifySessionToken(token: string): boolean {
-  const parts = token.split('.');
-  if (parts.length !== 2) return false;
-  const [payload, sig] = parts;
-  if (sign(payload) !== sig) return false;
-  return Date.now() < Number(payload);
+export async function verifySessionToken(token: string): Promise<boolean> {
+  try {
+    const dot = token.indexOf('.');
+    if (dot === -1) return false;
+    const payload = token.slice(0, dot);
+    const sig = decodeURIComponent(token.slice(dot + 1));
+    const expected = await sign(payload);
+    if (expected !== sig) return false;
+    return Date.now() < Number(payload);
+  } catch {
+    return false;
+  }
 }
-
-export { SESSION_COOKIE, SESSION_TTL_MS };

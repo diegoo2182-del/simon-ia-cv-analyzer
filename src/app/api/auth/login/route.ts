@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Contraseña incorrecta.' }, { status: 401 });
     }
 
-    const token = createSessionToken();
+    const token = await createSessionToken();
     const res = NextResponse.json({ success: true });
 
     res.cookies.set(SESSION_COOKIE, token, {
