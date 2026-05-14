@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionToken, SESSION_COOKIE } from '@/lib/session';
 
-const ALLOWED_ORIGINS = [
-  'https://simon-ia-cv-analyzer.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3001',
-];
-
 const PUBLIC_PATHS = ['/login', '/api/auth/login'];
+
+function isAllowedOrigin(origin: string): boolean {
+  if (origin.startsWith('http://localhost:')) return true;
+  if (origin.endsWith('.vercel.app')) return true;
+  return false;
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
 
     if (req.method === 'OPTIONS') {
       const res = new NextResponse(null, { status: 204 });
-      if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      if (origin && isAllowedOrigin(origin)) {
         res.headers.set('Access-Control-Allow-Origin', origin);
         res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
         res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -32,7 +32,7 @@ export async function middleware(req: NextRequest) {
       return res;
     }
 
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    if (origin && !isAllowedOrigin(origin)) {
       return NextResponse.json({ success: false, error: 'Origen no permitido.' }, { status: 403 });
     }
 
