@@ -3,8 +3,8 @@ import { AnalyzeRequest, AnalysisResult } from '@/types/analysis';
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const MAX_CV_CHARS = 2000;
-const MAX_JD_CHARS = 1200;
+const MAX_CV_CHARS = 4000;
+const MAX_JD_CHARS = 1500;
 
 function sanitizeCVText(text: string): string {
   return text

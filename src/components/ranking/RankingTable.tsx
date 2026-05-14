@@ -78,8 +78,13 @@ export function RankingTable({ candidates, onReset }: RankingTableProps) {
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-base font-bold text-[#1a1a3e] truncate">{best.fileName.replace(/\.[^/.]+$/, '')}</p>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#7c3aed] text-white">
-                Mejor candidato
+                Mayor score
               </span>
+              {best.result.recommendation === 'REJECT' && (
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-600 border border-red-200">
+                  ⚠ Ningún candidato supera el umbral mínimo
+                </span>
+              )}
             </div>
             <p className="text-sm text-slate-500 mt-1 line-clamp-2">{best.result.executiveSummary.summary}</p>
             <div className="flex flex-wrap gap-2 mt-2">
