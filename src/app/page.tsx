@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CVUploader } from '@/components/upload/CVUploader';
 import { JobDescriptionForm } from '@/components/form/JobDescriptionForm';
 import { Button } from '@/components/ui/Button';
@@ -46,6 +47,12 @@ function CheckItem({ text }: { text: string }) {
 
 export default function Home() {
   const [mode, setMode] = useState<Mode>('individual');
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  };
 
   // Individual mode state
   const [file, setFile] = useState<File | null>(null);
@@ -134,9 +141,20 @@ export default function Home() {
               <span className="text-base font-light text-[#7c3aed] ml-1">IA CV Analyzer</span>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 bg-white border border-[#e8e4f0] px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            Powered by Groq
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 bg-white border border-[#e8e4f0] px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              Powered by Groq
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-100"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              Salir
+            </button>
           </div>
         </div>
       </header>
