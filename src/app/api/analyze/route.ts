@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractTextFromFile } from '@/services/fileParser';
 import { analyzeCV } from '@/services/groq';
 import { JobRequirements, AnalyzeResponse } from '@/types/analysis';
+import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
 
 export const runtime = 'nodejs';
 
@@ -12,6 +13,16 @@ const ACCEPTED_TYPES = [
 ];
 
 export async function POST(req: NextRequest): Promise<NextResponse<AnalyzeResponse>> {
+  const ip = getClientIP(req);
+  const rl = checkRateLimit(ip, 'analyze');
+  if (!rl.allowed) {
+    const resetIn = Math.ceil((rl.resetAt - Date.now()) / 60000);
+    return NextResponse.json(
+      { success: false, error: `Límite de solicitudes alcanzado. Intentá de nuevo en ${resetIn} minutos.` },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    );
+  }
+
   try {
     if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
