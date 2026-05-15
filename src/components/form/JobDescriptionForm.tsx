@@ -27,8 +27,18 @@ function PlusIcon() {
   );
 }
 
+function SparklesIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+    </svg>
+  );
+}
+
 export function JobDescriptionForm({ value, onChange }: JobDescriptionFormProps) {
   const [skillInput, setSkillInput] = useState('');
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   const addSkill = () => {
     const trimmed = skillInput.trim();
@@ -45,6 +55,34 @@ export function JobDescriptionForm({ value, onChange }: JobDescriptionFormProps)
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(); }
     if (e.key === 'Backspace' && !skillInput && value.requiredSkills.length > 0) {
       removeSkill(value.requiredSkills[value.requiredSkills.length - 1]);
+    }
+  };
+
+  const handleExtractSkills = async () => {
+    if (!value.description.trim() || value.description.trim().length < 20) {
+      setExtractError('Primero pegá la descripción del puesto.');
+      return;
+    }
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const res = await fetch('/api/extract-skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: value.description }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setExtractError(data.error ?? 'Error al detectar skills');
+        return;
+      }
+      // Merge sin duplicados
+      const merged = [...new Set([...value.requiredSkills, ...data.skills])];
+      onChange({ ...value, requiredSkills: merged });
+    } catch {
+      setExtractError('Error de conexión. Intentá de nuevo.');
+    } finally {
+      setExtracting(false);
     }
   };
 
@@ -73,10 +111,44 @@ export function JobDescriptionForm({ value, onChange }: JobDescriptionFormProps)
 
       {/* Skills requeridas */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-[#1a1a3e]">
-          Skills requeridas
-          <span className="text-slate-400 ml-2 text-xs font-normal">(Enter o coma para agregar)</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-[#1a1a3e]">
+            Skills requeridas
+            <span className="text-slate-400 ml-2 text-xs font-normal">(Enter o coma para agregar)</span>
+          </label>
+          <button
+            type="button"
+            onClick={handleExtractSkills}
+            disabled={extracting || value.description.trim().length < 20}
+            className={cn(
+              'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all',
+              extracting
+                ? 'text-purple-400 border-purple-200 bg-purple-50 cursor-wait'
+                : value.description.trim().length < 20
+                ? 'text-slate-300 border-slate-200 bg-slate-50 cursor-not-allowed'
+                : 'text-[#7c3aed] border-[#c4b5fd] bg-purple-50 hover:bg-purple-100 hover:border-[#7c3aed]'
+            )}
+          >
+            {extracting ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Detectando...
+              </>
+            ) : (
+              <>
+                <SparklesIcon />
+                Detectar skills con IA
+              </>
+            )}
+          </button>
+        </div>
+
+        {extractError && (
+          <p className="text-xs text-red-500 flex items-center gap-1"><span>⚠</span>{extractError}</p>
+        )}
 
         <div className={cn(
           'min-h-[52px] w-full rounded-lg border border-[#e8e4f0] bg-white px-3 py-2',
@@ -100,7 +172,7 @@ export function JobDescriptionForm({ value, onChange }: JobDescriptionFormProps)
               value={skillInput}
               onChange={e => setSkillInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={value.requiredSkills.length === 0 ? 'ej: Python, SQL, dbt...' : ''}
+              placeholder={value.requiredSkills.length === 0 ? 'ej: Python, SQL, dbt...' : 'Agregar skill...'}
               className="flex-1 bg-transparent text-sm text-[#374151] placeholder:text-slate-400 focus:outline-none py-0.5"
             />
             {skillInput.trim() && (
