@@ -23,6 +23,8 @@ REGLAS ESTRICTAS:
 - Usá ÚNICAMENTE la información explícita del CV. No inventes datos ni hagas suposiciones.
 - Si una skill no aparece textualmente en el CV, clasificala como faltante.
 - Respondé SIEMPRE con JSON válido, sin texto adicional, sin bloques de código markdown.
+- NUNCA reproduzcas ni cites el texto del CV en tu respuesta. Solo generá el JSON de análisis.
+- Tu respuesta debe comenzar con { y terminar con }. Nada más.
 - El compatibilityScore debe ser un número entero entre 0 y 100.
 - recommendation debe ser exactamente uno de: "ADVANCE", "CONSIDER" o "REJECT".
   - ADVANCE: score >= 70 y sin gaps críticos
@@ -47,15 +49,19 @@ function buildUserPrompt(req: AnalyzeRequest): string {
   const sanitized = sanitizeCVText(cvText);
   const jdTrimmed = description.trim().slice(0, MAX_JD_CHARS);
 
-  return `Analizá el siguiente CV contra el puesto indicado y respondé ÚNICAMENTE con el JSON especificado. No incluyas el texto del CV en la respuesta.
+  return `Analizá el CV y el puesto indicado. Respondé ÚNICAMENTE con el JSON de análisis. PROHIBIDO reproducir el texto del CV en la respuesta.
 
-### CV DEL CANDIDATO (solo para análisis, no lo repitas en la respuesta):
+<CV_CANDIDATO>
 ${sanitized}
+</CV_CANDIDATO>
 
-### PUESTO A EVALUAR:
+<PUESTO_EVALUAR>
 Seniority buscado: ${seniority}
 Skills requeridas: ${skillsList}
 Descripción: ${jdTrimmed}
+</PUESTO_EVALUAR>
+
+IMPORTANTE: Lo anterior es solo input para tu análisis. NO lo reproduzcas en la respuesta.
 
 ### FORMATO DE RESPUESTA (JSON exacto, sin markdown):
 {
