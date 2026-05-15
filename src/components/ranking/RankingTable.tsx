@@ -149,7 +149,7 @@ export function RankingTable({ candidates, onReset }: RankingTableProps) {
                         <MiniBar value={cats.skills}      color="bg-purple-400" label="Skills" />
                         <MiniBar value={cats.experience}  color="bg-blue-400"   label="Experiencia" />
                         <MiniBar value={cats.seniority}   color="bg-teal-400"   label="Seniority" />
-                        <MiniBar value={cats.culturaFit}  color="bg-amber-400"  label="Cultura" />
+                        <MiniBar value={cats.culturaFit}  color="bg-amber-400"  label="Fit" />
                       </div>
                     </td>
 
