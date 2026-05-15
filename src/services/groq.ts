@@ -108,6 +108,24 @@ REGLAS:
 - detectedSeniority: uno de Junior|Semi-Senior|Senior|Lead|Principal`;
 }
 
+// Pesos por categoría: Skills 35%, Experiencia 30%, Seniority 25%, Fit 10%
+const CATEGORY_WEIGHTS = { skills: 0.35, experience: 0.30, seniority: 0.25, culturaFit: 0.10 };
+
+function computeScore(cats: { skills: number; experience: number; seniority: number; culturaFit: number }): number {
+  return Math.round(
+    cats.skills      * CATEGORY_WEIGHTS.skills +
+    cats.experience  * CATEGORY_WEIGHTS.experience +
+    cats.seniority   * CATEGORY_WEIGHTS.seniority +
+    cats.culturaFit  * CATEGORY_WEIGHTS.culturaFit
+  );
+}
+
+function deriveRecommendation(score: number, overallRisk: string): 'ADVANCE' | 'CONSIDER' | 'REJECT' {
+  if (score < 45 || overallRisk === 'high') return 'REJECT';
+  if (score >= 70 && overallRisk !== 'high') return 'ADVANCE';
+  return 'CONSIDER';
+}
+
 function parseResponse(raw: string): AnalysisResult {
   const cleaned = raw
     .replace(/^```json\s*/i, '')
@@ -129,18 +147,25 @@ function parseResponse(raw: string): AnalysisResult {
     }
   }
 
-  if (!['ADVANCE', 'CONSIDER', 'REJECT'].includes(parsed.recommendation)) {
-    throw new Error(`Valor de recommendation inválido: ${parsed.recommendation}`);
+  // Validar que los categoryScores sean números válidos
+  const cats = parsed.categoryScores;
+  for (const key of ['skills', 'experience', 'seniority', 'culturaFit'] as const) {
+    const v = Number(cats[key]);
+    if (isNaN(v) || v < 0 || v > 100) {
+      throw new Error(`categoryScores.${key} inválido: ${cats[key]}`);
+    }
+    cats[key] = Math.round(v);
   }
 
-  const score = Number(parsed.compatibilityScore);
-  if (isNaN(score) || score < 0 || score > 100) {
-    throw new Error(`compatibilityScore inválido: ${parsed.compatibilityScore}`);
-  }
+  // Score y recomendación calculados en el servidor — no dependemos del criterio del modelo
+  const compatibilityScore = computeScore(cats);
+  const recommendation = deriveRecommendation(compatibilityScore, parsed.gapsAnalysis?.overallRisk ?? 'low');
 
   return {
     ...parsed,
-    compatibilityScore: Math.round(score),
+    categoryScores: cats,
+    compatibilityScore,
+    recommendation,
   } as AnalysisResult;
 }
 
