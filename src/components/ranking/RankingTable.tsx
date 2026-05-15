@@ -24,9 +24,10 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function MiniBar({ value, color }: { value: number; color: string }) {
+function MiniBar({ value, color, label }: { value: number; color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
+      <span className="text-xs text-slate-400 w-16 shrink-0">{label}</span>
       <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
       </div>
@@ -144,11 +145,11 @@ export function RankingTable({ candidates, onReset }: RankingTableProps) {
 
                     {/* Desglose */}
                     <td className="px-5 py-4">
-                      <div className="space-y-1 min-w-[160px]">
-                        <MiniBar value={cats.skills}      color="bg-purple-400" />
-                        <MiniBar value={cats.experience}  color="bg-blue-400" />
-                        <MiniBar value={cats.seniority}   color="bg-teal-400" />
-                        <MiniBar value={cats.culturaFit}  color="bg-amber-400" />
+                      <div className="space-y-1 min-w-[200px]">
+                        <MiniBar value={cats.skills}      color="bg-purple-400" label="Skills" />
+                        <MiniBar value={cats.experience}  color="bg-blue-400"   label="Experiencia" />
+                        <MiniBar value={cats.seniority}   color="bg-teal-400"   label="Seniority" />
+                        <MiniBar value={cats.culturaFit}  color="bg-amber-400"  label="Cultura" />
                       </div>
                     </td>
 
