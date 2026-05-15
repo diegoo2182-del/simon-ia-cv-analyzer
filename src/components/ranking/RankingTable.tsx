@@ -107,7 +107,7 @@ export function RankingTable({ candidates, onReset }: RankingTableProps) {
                 <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-10">#</th>
                 <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3">Candidato</th>
                 <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-24">Score</th>
-                <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 min-w-[180px]">Desglose</th>
+                <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 min-w-[260px]">Desglose</th>
                 <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3">Skills match</th>
                 <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3">Recomendación</th>
               </tr>
