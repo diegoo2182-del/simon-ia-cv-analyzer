@@ -100,6 +100,13 @@ IMPORTANTE: Lo anterior es solo input para tu análisis. NO lo reproduzcas en la
 
 REGLAS:
 - categoryScores: enteros 0-100. skills=% de skills requeridas presentes; experience=alineación de experiencia; seniority=coincidencia de nivel; culturaFit=estimación de encaje
+- CALIBRACIÓN OBLIGATORIA de categoryScores (usá todo el rango, no comprimas en 60-80):
+  · 0-20: sin evidencia / no cumple
+  · 21-40: evidencia mínima o muy débil
+  · 41-60: cumplimiento parcial, gaps importantes
+  · 61-80: buen cumplimiento, gaps menores
+  · 81-100: excelente, supera requisitos con evidencia explícita
+- Si falta una skill requerida → skills score DEBE ser < 60. Si faltan varias → < 40.
 - gapsAnalysis.severity: "high"=bloqueante, "medium"=importante, "low"=menor
 - gapsAnalysis.category: "skills"|"experience"|"seniority"|"stability"|"other"
 - Si no hay gaps: items:[] y overallRisk:"low"
@@ -172,7 +179,7 @@ function parseResponse(raw: string): AnalysisResult {
 export async function analyzeCV(req: AnalyzeRequest): Promise<AnalysisResult> {
   const makeRequest = () => client.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
-    temperature: 0.2,
+    temperature: 0.1,
     max_tokens: 2000,
     response_format: { type: 'json_object' },
     messages: [
