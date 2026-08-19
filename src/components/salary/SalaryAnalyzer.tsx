@@ -253,33 +253,47 @@ function ScoreView({ candidates, matchStats }: { candidates: ScoredCandidate[]; 
 
 // ─── Upload zone ──────────────────────────────────────────────────────────────
 
+let _zoneCounter = 0;
+
 function FileDropZone({ label, hint, accept, multiple, files, onAdd, onRemove }: {
   label: string; hint: string; accept: string; multiple: boolean;
   files: File[]; onAdd: (fl: FileList | null) => void; onRemove: (name: string) => void;
 }) {
   const [drag, setDrag] = useState(false);
-  const ref = useRef<HTMLInputElement>(null);
+  const id = useRef(`fz-${++_zoneCounter}`).current;
+
   return (
     <div className="space-y-2">
-      <label className="text-sm font-semibold text-slate-700">{label}</label>
-      <div
+      <p className="text-sm font-semibold text-slate-700">{label}</p>
+      <label
+        htmlFor={id}
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); onAdd(e.dataTransfer.files); }}
-        onClick={() => ref.current?.click()}
-        className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-5 text-center
+        className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed cursor-pointer transition-colors p-5 text-center min-h-[110px]
           ${drag ? 'border-[#7c3aed] bg-purple-50' : 'border-slate-200 hover:border-[#7c3aed] hover:bg-slate-50'}`}
       >
-        <input ref={ref} type="file" accept={accept} multiple={multiple} className="hidden" onChange={(e) => onAdd(e.target.files)} />
+        <input
+          id={id}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          className="sr-only"
+          onChange={(e) => { onAdd(e.target.files); e.target.value = ''; }}
+        />
         <UploadIcon />
         <p className="mt-2 text-xs font-medium text-slate-600">{hint}</p>
-      </div>
+      </label>
       {files.length > 0 && (
         <ul className="space-y-1">
           {files.map((f) => (
             <li key={f.name} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 text-xs">
               <span className="text-slate-700 truncate">{f.name}</span>
-              <button onClick={(e) => { e.stopPropagation(); onRemove(f.name); }} className="text-slate-400 hover:text-rose-500 ml-3 shrink-0">✕</button>
+              <button
+                type="button"
+                onClick={() => onRemove(f.name)}
+                className="text-slate-400 hover:text-rose-500 ml-3 shrink-0 font-bold"
+              >✕</button>
             </li>
           ))}
         </ul>
@@ -382,31 +396,40 @@ export function SalaryAnalyzer() {
 
       {/* JD section — only shown when CVs are loaded */}
       {cvFiles.length > 0 && (
-        <div className="space-y-3 border border-slate-200 rounded-xl p-4">
-          <label className="text-sm font-semibold text-slate-700">3. Descripción del puesto (JD)</label>
-          <div className="flex gap-3">
-            <select
-              value={seniority}
-              onChange={(e) => setSeniority(e.target.value as Seniority)}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
-            >
-              {SENIORITY_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <input
-              type="text"
-              placeholder="Skills requeridas (ej: Python, SQL, AWS) — separadas por coma"
-              value={skills}
-              onChange={(e) => setSkills(e.target.value)}
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+        <div className="border border-purple-200 bg-purple-50/40 rounded-xl p-5 space-y-4">
+          <p className="text-sm font-semibold text-slate-700">3. Descripción del puesto (JD)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Seniority</label>
+              <select
+                value={seniority}
+                onChange={(e) => setSeniority(e.target.value as Seniority)}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+              >
+                {SENIORITY_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-slate-500">Skills requeridas (separadas por coma)</label>
+              <input
+                type="text"
+                placeholder="ej: Python, SQL, AWS, Docker"
+                value={skills}
+                onChange={(e) => setSkills(e.target.value)}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-500">Descripción del puesto</label>
+            <textarea
+              placeholder="Pegá aquí la descripción completa del puesto..."
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              rows={5}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#7c3aed] resize-none"
             />
           </div>
-          <textarea
-            placeholder="Pegá aquí la descripción completa del puesto..."
-            value={jdText}
-            onChange={(e) => setJdText(e.target.value)}
-            rows={5}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed] resize-none"
-          />
         </div>
       )}
 
