@@ -44,7 +44,7 @@ function buildUserPrompt(req: AnalyzeRequest): string {
 
   const skillsList = requiredSkills.length > 0
     ? requiredSkills.join(', ')
-    : 'No se especificaron skills obligatorias';
+    : 'No se especificaron — inferirlas del JD y evaluar en consecuencia';
 
   const sanitized = sanitizeCVText(cvText);
   const jdTrimmed = description.trim().slice(0, MAX_JD_CHARS);
@@ -106,6 +106,7 @@ REGLAS:
   · 41-60: cumplimiento parcial, gaps importantes
   · 61-80: buen cumplimiento, gaps menores
   · 81-100: excelente, supera requisitos con evidencia explícita
+- Si no se indicaron skills explícitas: inferirlas del JD antes de evaluar, y usarlas para matchingSkills/missingSkills.
 - Si falta una skill requerida → skills score DEBE ser < 60. Si faltan varias → < 40.
 - gapsAnalysis.severity: "high"=bloqueante, "medium"=importante, "low"=menor
 - gapsAnalysis.category: "skills"|"experience"|"seniority"|"stability"|"other"

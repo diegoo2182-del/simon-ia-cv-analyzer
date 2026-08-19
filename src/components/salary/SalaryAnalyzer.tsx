@@ -454,7 +454,9 @@ export function SalaryAnalyzer() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-500">Skills requeridas (separadas por coma)</label>
+              <label className="text-xs font-medium text-slate-500">
+                Skills requeridas <span className="text-slate-400">(opcional — se infieren del JD)</span>
+              </label>
               <input
                 type="text"
                 placeholder="ej: Python, SQL, AWS, Docker"
