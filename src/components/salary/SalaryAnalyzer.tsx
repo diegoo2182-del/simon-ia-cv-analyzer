@@ -369,18 +369,33 @@ export function SalaryAnalyzer() {
     if (!canAnalyze) return;
     setLoading(true);
     setResult(null);
-    setLoadingMsg(withScoring ? `Analizando ${excelFiles.length} Excel + ${cvFiles.length} CVs...` : `Procesando salarios...`);
 
     try {
       const fd = new FormData();
       excelFiles.forEach((f) => fd.append('files', f));
       if (withScoring) {
-        cvFiles.forEach((f) => fd.append('cvs', f));
+        // Extract CV text client-side to avoid Vercel's 4.5MB body limit
+        setLoadingMsg(`Extrayendo texto de ${cvFiles.length} CVs...`);
+        const { extractCVText } = await import('@/utils/clientExtract');
+        const cvTexts: { name: string; text: string }[] = [];
+        let done = 0;
+        await Promise.all(
+          cvFiles.map(async (f) => {
+            const text = await extractCVText(f);
+            cvTexts.push({ name: f.name, text });
+            done++;
+            setLoadingMsg(`Extrayendo texto... ${done}/${cvFiles.length} CVs`);
+          }),
+        );
+        fd.append('cvTexts', JSON.stringify(cvTexts));
         fd.append('jd', JSON.stringify({
           description: jdText,
           seniority,
           requiredSkills: skills.split(',').map((s) => s.trim()).filter(Boolean),
         }));
+        setLoadingMsg(`Analizando ${cvFiles.length} CVs con IA...`);
+      } else {
+        setLoadingMsg('Procesando salarios...');
       }
 
       const endpoint = withScoring ? '/api/salary-score' : '/api/salary';

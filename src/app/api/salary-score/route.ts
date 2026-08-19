@@ -50,7 +50,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryScoreRe
     }
 
     const jd: JDInput | null = jdRaw ? JSON.parse(jdRaw) : null;
-    const hasScoring = jd && cvFiles.length > 0;
+    // Accept pre-extracted texts (sent from client) or raw CV files (fallback)
+    const cvTextsRaw = formData.get('cvTexts') as string | null;
+    const cvTexts: { name: string; text: string }[] = cvTextsRaw
+      ? JSON.parse(cvTextsRaw)
+      : [];
+    const hasScoring = jd && (cvTexts.length > 0 || cvFiles.length > 0);
 
     // Parse Excel
     const allCandidates = [];
@@ -62,20 +67,22 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryScoreRe
       return NextResponse.json({ success: false, error: 'No se encontraron candidatos con salario en los archivos.' }, { status: 400 });
     }
 
-    // Parallel: salary parsing + exchange rates + CV text extraction
-    const cvTexts = hasScoring
-      ? await mapConcurrent(cvFiles, async (f) => {
-          try { return { name: f.name, text: await extractTextFromFile(f) }; }
-          catch { return { name: f.name, text: '' }; }
-        }, 4)
-      : [];
+    // CV texts: use pre-extracted (client-side) or extract from binary files
+    const resolvedCvTexts = cvTexts.length > 0
+      ? cvTexts
+      : hasScoring
+        ? await mapConcurrent(cvFiles, async (f) => {
+            try { return { name: f.name, text: await extractTextFromFile(f) }; }
+            catch { return { name: f.name, text: '' }; }
+          }, 4)
+        : [];
 
     const [parsedSalaries, rates] = await Promise.all([
       parseSalaries(allCandidates),
       getExchangeRates(),
     ]);
 
-    const cvFilenames = cvTexts.map((c) => c.name);
+    const cvFilenames = resolvedCvTexts.map((c) => c.name);
 
     // Build salary rows
     const rows: (CandidateSalaryRow & { annualUSD: number | null })[] = allCandidates.map((c, i) => {
@@ -157,7 +164,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryScoreRe
       rows.forEach((row, rowIdx) => {
         const match = matchCVToCandidate(row.name, cvFilenames);
         if (match) {
-          const cvEntry = cvTexts.find((c) => c.name === match.filename);
+          const cvEntry = resolvedCvTexts.find((c) => c.name === match.filename);
           if (cvEntry?.text) {
             matched.push({ rowIdx, cvText: cvEntry.text, cvFilename: match.filename, confidence: match.confidence });
           }
