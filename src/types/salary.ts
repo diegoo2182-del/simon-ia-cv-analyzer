@@ -1,3 +1,5 @@
+import { Seniority } from './analysis';
+
 export interface RawCandidate {
   firstName: string;
   lastName: string;
@@ -42,6 +44,32 @@ export interface PositionReport {
   excludedCount: number;
 }
 
+export interface ScoredCandidate {
+  name: string;
+  position: string;
+  location: string;
+  country: string;
+  rawSalary: string;
+  monthlyUSD: number | null;
+  annualUYU: number | null;
+  excludedFromComparison: boolean;
+  cvMatched: boolean;
+  cvFilename?: string;
+  matchConfidence?: number;
+  compatibilityScore?: number;
+  recommendation?: 'ADVANCE' | 'CONSIDER' | 'REJECT';
+  profileSummary?: string;
+  matchingSkills?: string[];
+  missingSkills?: string[];
+  recommendationReason?: string;
+}
+
+export interface MatchStats {
+  total: number;
+  matched: number;
+  analyzed: number;
+}
+
 export interface ExchangeRates {
   usdToUYU: number;
   arsPerUSD: number;
@@ -54,4 +82,19 @@ export interface SalaryAnalysisResponse {
   reports?: PositionReport[];
   rates?: ExchangeRates;
   error?: string;
+}
+
+export interface SalaryScoreResponse {
+  success: boolean;
+  reports?: PositionReport[];
+  scoredCandidates?: ScoredCandidate[];
+  rates?: ExchangeRates;
+  matchStats?: MatchStats;
+  error?: string;
+}
+
+export interface JDInput {
+  description: string;
+  seniority: Seniority;
+  requiredSkills: string[];
 }
