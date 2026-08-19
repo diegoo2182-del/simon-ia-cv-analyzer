@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import JSZip from 'jszip';
 import { SalaryAnalysisResponse, SalaryScoreResponse, PositionReport, ScoredCandidate } from '@/types/salary';
 import { Seniority } from '@/types/analysis';
 
@@ -319,16 +320,44 @@ export function SalaryAnalyzer() {
   const [activePosition, setActivePosition] = useState(0);
   const [view, setView] = useState<ResultView>('salary');
 
+  function mergeFiles(setter: React.Dispatch<React.SetStateAction<File[]>>, incoming: File[]) {
+    setter((prev) => {
+      const names = new Set(prev.map((f) => f.name));
+      return [...prev, ...incoming.filter((f) => !names.has(f.name))];
+    });
+  }
+
   function addFiles(setter: React.Dispatch<React.SetStateAction<File[]>>, exts: string[]) {
-    return (fl: FileList | null) => {
+    return async (fl: FileList | null) => {
       if (!fl) return;
-      const valid = Array.from(fl).filter((f) => exts.some((e) => f.name.toLowerCase().endsWith(e)));
-      setter((prev) => {
-        const names = new Set(prev.map((f) => f.name));
-        return [...prev, ...valid.filter((f) => !names.has(f.name))];
-      });
+      const files = Array.from(fl);
+      const zips = files.filter((f) => f.name.toLowerCase().endsWith('.zip'));
+      const direct = files.filter((f) => exts.some((e) => f.name.toLowerCase().endsWith(e)));
+
+      mergeFiles(setter, direct);
+
+      for (const zip of zips) {
+        try {
+          const jszip = await JSZip.loadAsync(await zip.arrayBuffer());
+          const extracted: File[] = [];
+          await Promise.all(
+            Object.entries(jszip.files).map(async ([path, entry]) => {
+              if (entry.dir) return;
+              const name = path.split('/').pop()!;
+              if (!exts.some((e) => name.toLowerCase().endsWith(e))) return;
+              if (name.startsWith('__MACOSX') || name.startsWith('.')) return;
+              const blob = await entry.async('blob');
+              extracted.push(new File([blob], name, { type: blob.type }));
+            }),
+          );
+          mergeFiles(setter, extracted);
+        } catch {
+          // silently skip bad zip
+        }
+      }
     };
   }
+
   function removeFile(setter: React.Dispatch<React.SetStateAction<File[]>>, name: string) {
     setter((prev) => prev.filter((f) => f.name !== name));
   }
@@ -385,8 +414,8 @@ export function SalaryAnalyzer() {
         />
         <FileDropZone
           label="2. CVs de candidatos (opcional — para análisis por score)"
-          hint="PDF o DOCX — el nombre del archivo debe incluir el nombre del candidato"
-          accept=".pdf,.docx,.doc"
+          hint="PDF, DOCX o ZIP con los CVs"
+          accept=".pdf,.docx,.doc,.zip"
           multiple
           files={cvFiles}
           onAdd={addFiles(setCvFiles, ['.pdf', '.docx', '.doc'])}
