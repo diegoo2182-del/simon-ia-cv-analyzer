@@ -52,7 +52,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryAnalysi
         parseNote = 'no parseable';
       }
 
+      // Cap: $15,000 USD/mes equivalente — candidatos que superan esto se excluyen del análisis geográfico
+      // (suelen ser montos anuales mal interpretados o candidatos de mercados fuera del rango LATAM)
+      const MONTHLY_CAP_USD = 15_000;
+      const ANNUAL_CAP_USD = MONTHLY_CAP_USD * 12;
+
       const locationParts = [c.city, c.state !== c.city ? c.state : '', c.country].filter(Boolean);
+      const exceedsCap = annualUSD !== null && annualUSD > ANNUAL_CAP_USD;
       return {
         name: `${c.firstName} ${c.lastName}`.trim(),
         position: c.position || 'Sin posición',
@@ -61,7 +67,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryAnalysi
         rawSalary: c.rawSalary,
         annualUSD,
         annualUYU,
-        parseNote,
+        parseNote: exceedsCap ? 'excede cap' : parseNote,
+        excludedFromComparison: exceedsCap,
       };
     });
 
@@ -76,9 +83,10 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryAnalysi
     for (const [position, candidates] of byPosition) {
       const sorted = [...candidates].sort((a, b) => (a.annualUSD ?? Infinity) - (b.annualUSD ?? Infinity));
 
-      // Geographic summary
+      // Geographic summary — solo candidatos dentro del cap
+      const eligible = candidates.filter((c) => !c.excludedFromComparison);
       const byCountryMap = new Map<string, CandidateSalaryRow[]>();
-      for (const c of candidates) {
+      for (const c of eligible) {
         if (!byCountryMap.has(c.country)) byCountryMap.set(c.country, []);
         byCountryMap.get(c.country)!.push(c);
       }
@@ -91,7 +99,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryAnalysi
         const avg = Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length);
         byLocation.push({
           country,
-          count: cands.length,
+          count: withSalary.length,
           avgUSD: avg,
           minUSD: Math.min(...amounts),
           maxUSD: Math.max(...amounts),
@@ -100,7 +108,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<SalaryAnalysi
       }
       byLocation.sort((a, b) => a.avgUSD - b.avgUSD);
 
-      reports.push({ position, candidates: sorted, byLocation });
+      const excludedCount = candidates.filter((c) => c.excludedFromComparison).length;
+      reports.push({ position, candidates: sorted, byLocation, excludedCount });
     }
 
     return NextResponse.json({

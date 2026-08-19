@@ -70,9 +70,10 @@ function CandidatesTable({ candidates }: { candidates: CandidateSalaryRow[] }) {
                   <td className="px-4 py-2.5 text-slate-500 font-mono text-xs">{c.rawSalary}</td>
                   <td className="px-4 py-2.5 text-right">
                     {c.annualUSD !== null ? (
-                      <span className="font-semibold text-slate-800">
+                      <span className={`font-semibold ${c.excludedFromComparison ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                         {fmt(c.annualUSD)}
                         {c.parseNote === 'estimado' && <span className="ml-1 text-amber-400 text-xs">~</span>}
+                        {c.excludedFromComparison && <span className="ml-1 text-amber-500 text-xs no-underline" style={{textDecoration:'none'}}>excluido</span>}
                       </span>
                     ) : <span className="text-slate-300 text-xs">—</span>}
                   </td>
@@ -104,7 +105,12 @@ function PositionView({ report }: { report: PositionReport }) {
       <div className="flex flex-wrap gap-2 text-xs">
         <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{totalCandidates} candidatos totales</span>
         <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{withSalary} con salario declarado</span>
-        <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{locs.length} países</span>
+        <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{locs.length} países en análisis</span>
+        {report.excludedCount > 0 && (
+          <span className="bg-amber-100 text-amber-700 rounded-full px-3 py-1" title="Montos que superan USD 15.000/mes — probablemente montos anuales o mercados fuera del rango LATAM">
+            {report.excludedCount} excluidos del análisis (&gt;USD 15k/mes)
+          </span>
+        )}
         {minCountry && (
           <span className="bg-emerald-100 text-emerald-700 rounded-full px-3 py-1 font-medium">
             ★ Más económico: {minCountry} ({fmt(locs[0].avgUSD)}/año)

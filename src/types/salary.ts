@@ -23,6 +23,7 @@ export interface CandidateSalaryRow {
   annualUSD: number | null;
   annualUYU: number | null;
   parseNote: string;
+  excludedFromComparison?: boolean;
 }
 
 export interface LocationSummary {
@@ -38,6 +39,7 @@ export interface PositionReport {
   position: string;
   candidates: CandidateSalaryRow[];
   byLocation: LocationSummary[];
+  excludedCount: number;
 }
 
 export interface ExchangeRates {
