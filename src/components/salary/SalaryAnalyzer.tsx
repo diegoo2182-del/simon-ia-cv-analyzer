@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { SalaryAnalysisResponse, PositionReport, LocationSummary } from '@/types/salary';
+import { SalaryAnalysisResponse, PositionReport, CandidateSalaryRow } from '@/types/salary';
 
 function fmt(n: number, currency = 'USD') {
   return new Intl.NumberFormat('es-UY', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
@@ -15,112 +15,68 @@ function UploadIcon() {
   );
 }
 
-function GlobeIcon() {
+function ChevronIcon({ open }: { open: boolean }) {
   return (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+    <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
     </svg>
   );
 }
 
-function LocationCard({ loc, isMin, isMax }: { loc: LocationSummary; isMin: boolean; isMax: boolean }) {
+function Bar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div className={`rounded-xl border p-4 ${isMin ? 'border-emerald-300 bg-emerald-50' : isMax ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-semibold text-slate-800 text-sm">{loc.country}</span>
-        {isMin && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">★ Más bajo</span>}
-        {isMax && <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium">Más alto</span>}
-      </div>
-      <p className="text-xs text-slate-500 mb-3">{loc.count} candidato{loc.count !== 1 ? 's' : ''} con salario declarado</p>
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-500">Promedio</span>
-          <span className="font-semibold text-slate-800">{fmt(loc.avgUSD)}/año</span>
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-500">Mínimo</span>
-          <span className="text-slate-700">{fmt(loc.minUSD)}/año</span>
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-slate-500">Máximo</span>
-          <span className="text-slate-700">{fmt(loc.maxUSD)}/año</span>
-        </div>
-        <div className="flex justify-between text-xs pt-1 border-t border-slate-100 mt-1">
-          <span className="text-slate-400">En UYU</span>
-          <span className="text-slate-500">{fmt(loc.avgUYU, 'UYU')}/año</span>
-        </div>
-      </div>
+    <div className="w-full bg-slate-100 rounded-full h-1.5 mt-1">
+      <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-function PositionView({ report }: { report: PositionReport }) {
-  const withSalary = report.candidates.filter((c) => c.annualUSD !== null);
-  const minAvg = report.byLocation[0]?.country;
-  const maxAvg = report.byLocation[report.byLocation.length - 1]?.country;
+function CandidatesTable({ candidates }: { candidates: CandidateSalaryRow[] }) {
+  const [open, setOpen] = useState(false);
+  const withSalary = candidates.filter((c) => c.annualUSD !== null);
 
   return (
-    <div className="space-y-6">
-      {/* Geographic summary */}
-      {report.byLocation.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
-            <GlobeIcon />
-            Resumen geográfico — expectativa promedio por país (USD anual)
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {report.byLocation.map((loc) => (
-              <LocationCard
-                key={loc.country}
-                loc={loc}
-                isMin={loc.country === minAvg}
-                isMax={loc.country === maxAvg}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-sm font-medium text-slate-600"
+      >
+        <span>Ver candidatos individuales ({withSalary.length} con salario declarado)</span>
+        <ChevronIcon open={open} />
+      </button>
 
-      {/* Candidates table */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">
-          Candidatos ordenados por salario pedido ↑
-          <span className="text-slate-400 font-normal ml-2">({withSalary.length} de {report.candidates.length} con datos)</span>
-        </h3>
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+      {open && (
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Candidato</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">País</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ciudad</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pedido original</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">USD/año</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">UYU/año</th>
+              <tr className="bg-slate-50 border-t border-b border-slate-200">
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Candidato</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">País</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ciudad</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Pedido original</th>
+                <th className="text-right px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">USD/año</th>
+                <th className="text-right px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">UYU/año</th>
               </tr>
             </thead>
             <tbody>
-              {report.candidates.map((c, i) => (
+              {candidates.map((c, i) => (
                 <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3 text-slate-400 text-xs">{i + 1}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{c.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{c.country || '—'}</td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">{c.location.split(',').slice(0, -1).join(',').trim() || '—'}</td>
-                  <td className="px-4 py-3 text-slate-600 font-mono text-xs">{c.rawSalary}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-2.5 text-slate-400 text-xs">{i + 1}</td>
+                  <td className="px-4 py-2.5 font-medium text-slate-800">{c.name}</td>
+                  <td className="px-4 py-2.5 text-slate-600 text-xs">{c.country || '—'}</td>
+                  <td className="px-4 py-2.5 text-slate-500 text-xs">{c.location.split(',').slice(0, -1).join(',').trim() || '—'}</td>
+                  <td className="px-4 py-2.5 text-slate-500 font-mono text-xs">{c.rawSalary}</td>
+                  <td className="px-4 py-2.5 text-right">
                     {c.annualUSD !== null ? (
                       <span className="font-semibold text-slate-800">
                         {fmt(c.annualUSD)}
-                        {c.parseNote === 'estimado' && (
-                          <span className="ml-1 text-amber-500 text-xs">~</span>
-                        )}
+                        {c.parseNote === 'estimado' && <span className="ml-1 text-amber-400 text-xs">~</span>}
                       </span>
-                    ) : (
-                      <span className="text-slate-300 text-xs">—</span>
-                    )}
+                    ) : <span className="text-slate-300 text-xs">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-500 text-xs">
+                  <td className="px-4 py-2.5 text-right text-slate-500 text-xs">
                     {c.annualUYU !== null ? fmt(c.annualUYU, 'UYU') : '—'}
                   </td>
                 </tr>
@@ -128,7 +84,99 @@ function PositionView({ report }: { report: PositionReport }) {
             </tbody>
           </table>
         </div>
+      )}
+    </div>
+  );
+}
+
+function PositionView({ report }: { report: PositionReport }) {
+  const locs = report.byLocation;
+  const maxAvg = locs.length ? Math.max(...locs.map((l) => l.avgUSD)) : 0;
+  const minCountry = locs[0]?.country;
+  const maxCountry = locs[locs.length - 1]?.country;
+  const totalCandidates = report.candidates.length;
+  const withSalary = report.candidates.filter((c) => c.annualUSD !== null).length;
+
+  return (
+    <div className="space-y-6">
+
+      {/* Summary pills */}
+      <div className="flex flex-wrap gap-2 text-xs">
+        <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{totalCandidates} candidatos totales</span>
+        <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{withSalary} con salario declarado</span>
+        <span className="bg-slate-100 text-slate-600 rounded-full px-3 py-1">{locs.length} países</span>
+        {minCountry && (
+          <span className="bg-emerald-100 text-emerald-700 rounded-full px-3 py-1 font-medium">
+            ★ Más económico: {minCountry} ({fmt(locs[0].avgUSD)}/año)
+          </span>
+        )}
+        {maxCountry && maxCountry !== minCountry && (
+          <span className="bg-rose-100 text-rose-700 rounded-full px-3 py-1">
+            Más alto: {maxCountry} ({fmt(locs[locs.length - 1].avgUSD)}/año)
+          </span>
+        )}
       </div>
+
+      {/* Comparison table */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-700 mb-3">Comparativa por localidad · ordenado por promedio USD ↑</h3>
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">País</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Candidatos</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Mín USD/año</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Prom USD/año</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Máx USD/año</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Prom UYU/año</th>
+                <th className="px-4 py-3 w-32"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {locs.map((loc, i) => {
+                const isMin = loc.country === minCountry;
+                const isMax = loc.country === maxCountry && locs.length > 1;
+                return (
+                  <tr
+                    key={loc.country}
+                    className={`border-b border-slate-100 ${isMin ? 'bg-emerald-50' : isMax ? 'bg-rose-50' : 'hover:bg-slate-50'} transition-colors`}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {isMin && <span className="text-emerald-600 font-bold text-xs">★</span>}
+                        <span className={`font-semibold ${isMin ? 'text-emerald-800' : 'text-slate-800'}`}>{loc.country}</span>
+                        {isMin && <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Más bajo</span>}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">#{i + 1} de {locs.length}</div>
+                    </td>
+                    <td className="px-4 py-3 text-center text-slate-600">{loc.count}</td>
+                    <td className="px-4 py-3 text-right text-slate-600">{fmt(loc.minUSD)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={`font-bold ${isMin ? 'text-emerald-700' : isMax ? 'text-rose-700' : 'text-slate-800'}`}>
+                        {fmt(loc.avgUSD)}
+                      </span>
+                      <Bar value={loc.avgUSD} max={maxAvg} color={isMin ? 'bg-emerald-400' : isMax ? 'bg-rose-400' : 'bg-[#7c3aed]'} />
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-600">{fmt(loc.maxUSD)}</td>
+                    <td className="px-4 py-3 text-right text-slate-500 text-xs">{fmt(loc.avgUYU, 'UYU')}</td>
+                    <td className="px-4 py-3 text-right">
+                      {i > 0 && (
+                        <span className="text-xs text-rose-500 font-medium">
+                          +{Math.round(((loc.avgUSD - locs[0].avgUSD) / locs[0].avgUSD) * 100)}% vs {minCountry}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Candidates collapsible */}
+      <CandidatesTable candidates={report.candidates} />
     </div>
   );
 }
@@ -143,9 +191,7 @@ export function SalaryAnalyzer() {
 
   function addFiles(incoming: FileList | null) {
     if (!incoming) return;
-    const xlsx = Array.from(incoming).filter((f) =>
-      f.name.endsWith('.xlsx') || f.name.endsWith('.xls'),
-    );
+    const xlsx = Array.from(incoming).filter((f) => f.name.endsWith('.xlsx') || f.name.endsWith('.xls'));
     setFiles((prev) => {
       const names = new Set(prev.map((f) => f.name));
       return [...prev, ...xlsx.filter((f) => !names.has(f.name))];
@@ -160,7 +206,6 @@ export function SalaryAnalyzer() {
     if (!files.length) return;
     setLoading(true);
     setResult(null);
-
     try {
       const fd = new FormData();
       files.forEach((f) => fd.append('files', f));
@@ -186,19 +231,10 @@ export function SalaryAnalyzer() {
         className={`rounded-2xl border-2 border-dashed cursor-pointer transition-colors p-8 text-center
           ${dragging ? 'border-[#7c3aed] bg-purple-50' : 'border-slate-200 hover:border-[#7c3aed] hover:bg-slate-50'}`}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          multiple
-          className="hidden"
-          onChange={(e) => addFiles(e.target.files)}
-        />
+        <input ref={inputRef} type="file" accept=".xlsx,.xls" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
         <UploadIcon />
-        <p className="mt-3 text-sm font-medium text-slate-700">
-          Arrastrá los Excel de BambooHR o hacé click para seleccionar
-        </p>
-        <p className="mt-1 text-xs text-slate-400">Exportá desde BambooHR → Jobs → Active Applicants → Export to Excel</p>
+        <p className="mt-3 text-sm font-medium text-slate-700">Arrastrá los Excel de BambooHR o hacé click para seleccionar</p>
+        <p className="mt-1 text-xs text-slate-400">BambooHR → Jobs → Active Applicants → Export to Excel</p>
       </div>
 
       {/* File list */}
@@ -207,18 +243,12 @@ export function SalaryAnalyzer() {
           {files.map((f) => (
             <li key={f.name} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-2 text-sm">
               <span className="text-slate-700 font-medium truncate">{f.name}</span>
-              <button
-                onClick={() => removeFile(f.name)}
-                className="text-slate-400 hover:text-rose-500 transition-colors ml-4 shrink-0 text-xs"
-              >
-                Quitar
-              </button>
+              <button onClick={() => removeFile(f.name)} className="text-slate-400 hover:text-rose-500 transition-colors ml-4 shrink-0 text-xs">Quitar</button>
             </li>
           ))}
         </ul>
       )}
 
-      {/* Analyze button */}
       {files.length > 0 && (
         <button
           onClick={analyze}
@@ -229,25 +259,17 @@ export function SalaryAnalyzer() {
         </button>
       )}
 
-      {/* Error */}
       {result && !result.success && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
-          {result.error}
-        </div>
+        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">{result.error}</div>
       )}
 
-      {/* Results */}
       {result?.success && result.reports && (
         <div className="space-y-5">
-          {/* Exchange rates used */}
+          {/* Exchange rates */}
           {result.rates && (
-            <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-              <span className="bg-slate-100 rounded-full px-3 py-1">
-                1 USD = {result.rates.usdToUYU.toFixed(1)} UYU
-              </span>
-              <span className="bg-slate-100 rounded-full px-3 py-1">
-                ARS ({result.rates.rateType}) = {result.rates.arsPerUSD.toFixed(0)} ARS/USD
-              </span>
+            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+              <span className="bg-slate-100 rounded-full px-3 py-1">1 USD = {result.rates.usdToUYU.toFixed(1)} UYU</span>
+              <span className="bg-slate-100 rounded-full px-3 py-1">ARS MEP: {result.rates.arsPerUSD.toFixed(0)} ARS/USD</span>
               <span className="bg-slate-100 rounded-full px-3 py-1">
                 Actualizado: {new Date(result.rates.fetchedAt).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' })}
               </span>
@@ -262,9 +284,7 @@ export function SalaryAnalyzer() {
                   key={r.position}
                   onClick={() => setActiveTab(i)}
                   className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px
-                    ${activeTab === i
-                      ? 'border-[#7c3aed] text-[#7c3aed]'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    ${activeTab === i ? 'border-[#7c3aed] text-[#7c3aed]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
                   {r.position}
                 </button>
